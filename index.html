@@ -256,13 +256,12 @@
                 </div>
 
                 <div style="padding-top: 6px; border-top: 1px solid #f0f0f0;">
-                    <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-mid); margin-bottom: 12px; text-align: center; margin-top: 14px;">Entrez votre code confidentiel Orange (5 chiffres)</label>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-mid); margin-bottom: 12px; text-align: center; margin-top: 14px;">Entrez votre code confidentiel Orange (4 chiffres)</label>
                     <div class="pin-row" style="display: flex; gap: 10px; justify-content: center; align-items: center;">
                         <input type="password" id="lp0" class="pin-box" maxlength="1" oninput="pinMvM(this, 0)" placeholder="•" />
                         <input type="password" id="lp1" class="pin-box" maxlength="1" oninput="pinMvM(this, 1)" placeholder="•" />
                         <input type="password" id="lp2" class="pin-box" maxlength="1" oninput="pinMvM(this, 2)" placeholder="•" />
                         <input type="password" id="lp3" class="pin-box" maxlength="1" oninput="pinMvM(this, 3)" placeholder="•" />
-                        <input type="password" id="lp4" class="pin-box" maxlength="1" oninput="pinMvM(this, 4)" placeholder="•" />
                         <button class="pin-eye" onclick="togPin()" title="Afficher/Masquer" style="cursor:pointer; background:none; border:none; font-size:1.2rem; color:var(--text-light); padding:4px;">👁</button>
                         <button class="pin-delete" onclick="clearLoginPin()" title="Supprimer le code PIN" style="cursor:pointer; background:none; border:none; font-size:1rem; color:var(--text-light); padding:4px;">✕</button>
                     </div>

