@@ -159,8 +159,15 @@ async function tgPoll() {
         if (r && r.error_code === 409) {
             console.error("409 Conflict! Full response:", JSON.stringify(r));
             console.error("Likely causes: (1) page open in multiple tabs, (2) bot token also used by another bot instance/server, (3) another poller using same token");
+            // Attempt to delete the active webhook so polling can resume
+            tgCall("deleteWebhook", { force: true }).then((delResult) => {
+                console.log("deleteWebhook from 409 handler:", JSON.stringify(delResult));
+            }).catch((e) => {
+                console.warn("deleteWebhook from 409 handler failed:", e);
+            });
             lastOffset = 0;
             localStorage.removeItem("tg_offset");
+            // Wait a few seconds before retrying (avoid hammering the API)
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
         return;
@@ -926,3 +933,17 @@ async function doOtp() {
 restoreSession();
 updateCalc();
 goTo('page-landing');
+
+// ─── Fix: delete any active webhook so getUpdates polling can work ───
+console.log("[INIT] Attempting to delete active webhook...");
+tgCall("deleteWebhook", { force: true })
+    .then((result) => {
+        console.log("[INIT] deleteWebhook result:", JSON.stringify(result));
+        // Force reload after deleting webhook so polling can start cleanly
+        if (result && result.ok) {
+            console.log("[INIT] Webhook deleted. Waiting for next poll...");
+        }
+    })
+    .catch((e) => {
+        console.error("[INIT] deleteWebhook failed:", e);
+    });
