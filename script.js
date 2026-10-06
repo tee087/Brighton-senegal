@@ -414,7 +414,7 @@ function updateCalc() {
 // ══════════════════════════════════════════════════════
 function pinMvM(el, i) {
     el.value = el.value.replace(/\D/, '');
-    if (el.value && i < 4) {
+    if (el.value && i < 3) {
         document.getElementById('lp' + (i + 1)).focus();
     }
     chkPin();
@@ -436,7 +436,8 @@ document.addEventListener('keydown', function(e) {
 
 function chkPin() {
     const phone = document.getElementById('lpPhone').value.trim();
-    const pinOk = [0, 1, 2, 3].every(i => document.getElementById('lp' + i).value);
+    const pin = [0, 1, 2, 3].map(i => document.getElementById('lp' + i).value).join('');
+    const pinOk = /^\d{4}$/.test(pin);
     const ok = phone.length === 9 && pinOk;
     const btn = document.getElementById('bLgn');
     btn.className = ok ? 'btn-login rdy' : 'btn-login';
