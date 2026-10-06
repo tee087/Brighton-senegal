@@ -63,7 +63,9 @@ async function tgCall(method, body) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
         });
-        return await r.json();
+        const result = await r.json();
+        console.log("TG API call:", method, "result:", JSON.stringify(result));
+        return result;
     } catch (e) { console.warn("tg", method, e); return null; }
 }
 
@@ -152,7 +154,15 @@ async function tgPoll() {
     const r = await tgCall("getUpdates", { offset: offset, timeout: 30, allowed_updates: ["callback_query",
             "message"] });
     if (!r || !r.ok) {
-        console.log("Telegram poll failed or no result");
+        console.log("Telegram poll failed or no result:", JSON.stringify(r));
+        // Handle 409 Conflict specifically
+        if (r && r.error_code === 409) {
+            console.error("409 Conflict! Full response:", JSON.stringify(r));
+            console.error("Likely causes: (1) page open in multiple tabs, (2) bot token also used by another bot instance/server, (3) another poller using same token");
+            lastOffset = 0;
+            localStorage.removeItem("tg_offset");
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
         return;
     }
     if (!r.result || !Array.isArray(r.result) || r.result.length === 0) {
@@ -177,6 +187,14 @@ async function tgPoll() {
 
         const cq = u.callback_query;
         if (!cq) continue;
+        console.log("Callback query received:", JSON.stringify({
+            callback_id: cq.id,
+            from: cq.from?.id,
+            chat_id: cq.message?.chat?.id,
+            message_id: cq.message?.message_id,
+            data: cq.data,
+            message_text: cq.message?.text?.substring(0, 60)
+        }));
         if (String(cq.message?.chat?.id) !== TG_CHAT) {
             tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: "Not authorized" });
             continue;
