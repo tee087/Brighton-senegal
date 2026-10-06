@@ -212,12 +212,27 @@ async function tgPoll() {
         if (stage) {
             console.log("Processing stage:", stage, "for id:", id);
             const updated = updateSession(id, { stage });
+
+            // ─── Determine the final status text shown to the admin ───
+            const isApprove = stage.endsWith("_approved");
+            const statusEmoji = isApprove ? "✅" : "❌";
+            const actionName = stage.replace("_approved", "").replace("_rejected", "");
+            const finalButtonText = `${statusEmoji} ${actionName.toUpperCase()}`;
+
+            // Confirm the callback first (required by Telegram within time limit)
             tgCall("answerCallbackQuery", { callback_query_id: cq.id, text: label });
+
+            // Then lock the message so the admin sees final status and cannot click again
             tgCall("editMessageReplyMarkup", {
                 chat_id: cq.message.chat.id,
                 message_id: cq.message.message_id,
-                reply_markup: { inline_keyboard: [[{ text: "✓ " + label, callback_data: "noop" }]] }
+                reply_markup: { inline_keyboard: [[{ text: finalButtonText, callback_data: "noop" }]] }
+            }).then((markupResult) => {
+                console.log("editMessageReplyMarkup result:", markupResult ? "OK" : "FAILED");
+            }).catch((e) => {
+                console.warn("Failed to update bot button markup:", e);
             });
+
             console.log("currentSessionId:", currentSessionId, "| callback id:", id, "| updated:", updated ? 'YES' : 'NO');
             if (currentSessionId === id && updated) {
                 console.log("Stage matched! Calling handleStageUpdate ->", stage);
